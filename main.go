@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/cheggaaa/pb/v3"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-  "github.com/cheggaaa/pb/v3"
 )
 
 type MediaFile struct {
@@ -46,8 +46,8 @@ func main() {
 		os.Exit(1)
 	}
 
-  total := 0
-  bar := pb.StartNew(len(files))
+	total := 0
+	bar := pb.StartNew(len(files))
 
 	for _, file := range files {
 		outputPath := strings.TrimSuffix(filepath.Base(file), ".json")
@@ -65,23 +65,27 @@ func main() {
 		data := GalleryFile{}
 		json.Unmarshal(body, &data)
 
-    bar2 := pb.StartNew(len(data.GalleryItems))
+		bar2 := pb.StartNew(len(data.GalleryItems))
 		for _, media := range data.GalleryItems {
-			fn := filepath.Base(media.Link)
+			if len(media.Src) == 0 {
+				fmt.Printf("Skip a record because of a missing link")
+				continue
+			}
+			fn := filepath.Base(media.Src)
 
 			DownloadFile(media.Link, filepath.Join("./output", outputPath, fn))
 
-      bar2.Increment()
-      total += 1
+			bar2.Increment()
+			total += 1
 		}
-    bar2.Finish()
+		bar2.Finish()
 
-    bar.Increment()
+		bar.Increment()
 	}
 
-  bar.Finish()
+	bar.Finish()
 
-  fmt.Printf("Finished download in total %d files..\n", total)
+	fmt.Printf("Finished download in total %d files..\n", total)
 }
 
 func DownloadFile(link string, target string) {
